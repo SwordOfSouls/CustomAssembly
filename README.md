@@ -8,7 +8,7 @@
 
 <h1>Custom Assembly</h1>
   <p>
-    A project built for fun implementing a rudimentary Custom ISA within a Virtual C# Emulator based on RISC hardware. <br />
+    A project built for fun implementing a rudimentary Custom ISA (also built for fun) within a Virtual C# Emulator based on RISC hardware. <br />
     <a href="https://docs.google.com/document/d/1I8XQ1ReggOCb6f_LnGRW6zIg9mHQOgjT-SO7UEkCNIM/edit">ISA</a>
   </p>
 </div>
