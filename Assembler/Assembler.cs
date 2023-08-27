@@ -26,14 +26,6 @@ public class Assembler
     output = new List<byte>();
   }
 
-  public void Multiplier()
-  {
-    // for (int i = 0; i < source.Count; i++)
-    // {
-    //   
-    // }
-  }
-
   public void MacroProcessing()
   {
     for (int i = 0; i < source.Count; i++)
@@ -75,54 +67,39 @@ public class Assembler
         if(sizing==1) source[i] = source[i].Replace(iReplacement, "0").Trim();
         else source[i] = source[i].Replace(iReplacement, "0 0").Trim();
       }
-      if (regex(source[i], @"^[a-zA-Z0-9]+[\[].*[\]]$"))
+      
+      string? macroSearch = findMacro(source[i]);
+      if (macroSearch!=null)
       {
-        var parts = Regex.Matches(source[i].Replace("_", " "), @"([^,\[\]]+)").Select(match => match.Value).ToList();
+        string targetMacro = macroSearch;
+        var parts = Regex.Matches(targetMacro.Replace("_", " "), @"([^,\[\]]+)").Select(match => match.Value).ToList();
         string id = parts[0];
         if (!_macroProcessor.macros.ContainsKey(parts[0])) throw new FormatException($"Macro '{id}' doesn't exist!");
+        parts.RemoveAt(0);
 
         Macro macro = _macroProcessor.macros[id];
-        parts.RemoveAt(0);
-        source.RemoveAt(i);
-        source.InsertRange(i, macro.Process(parts.ToArray()));
-        i--;
+        bool inline = source[i] != targetMacro;
+        if (inline && macro.Return == null) throw new SecurityException($"Inline Macro '{id}' has no return!");
+        if (inline) source[i] = source[i].Replace(targetMacro, macro.Return);
+        else source.RemoveAt(i);
+        string[] content = macro.Process(parts.ToArray());
+        source.InsertRange(i, content);
         continue;
       }
-      
-      string[] args = source[i].Split();
-      var fullArgumentBuilder = new StringBuilder();
-      int iOffset = 0;
-      int writeOffset = 0;
-      for (int a = 0; a < args.Length; a++)
-      {
-        string arg = args[a];
-
-        if (regex(arg, @"[a-zA-Z0-9]+[\[](.\d[,]?[ ]?[_]?)*[\]]"))
-        {
-          var parts = Regex.Matches(arg.Replace("_", " "), @"([^,\[\]]+)").Select(match => match.Value).ToList();
-          string id = parts[0];
-          if (!_macroProcessor.macros.ContainsKey(parts[0])) throw new FormatException($"Macro '{id}' doesn't exist!");
-
-          Macro macro = _macroProcessor.macros[id];
-          if (macro.Return == null) throw new SecurityException($"Inline Macro '{id}' has no return!");
-          parts.RemoveAt(0);
-          arg = macro.Return;
-          string[] content = macro.Process(parts.ToArray());
-          source.InsertRange(i, content);
-          iOffset += 1;
-          writeOffset += content.Length;
-        }
-        fullArgumentBuilder.Append(arg);
-        if (a+1 < args.Length)
-        {
-          fullArgumentBuilder.Append(" ");
-        }
-      }
-      source[i+writeOffset] = fullArgumentBuilder.ToString();
-      i -= iOffset;
     }
   }
 
+  public string? findMacro(string input)
+  {
+    var matches = Regex.Matches(input, @"[a-zA-Z0-9]+[\[](.+)[\]]").Select(match => match.Groups[1].Value).ToList();
+    foreach (var innerMatch in matches)
+    {
+      var internalMatches = Regex.Matches(innerMatch, @"[a-zA-Z0-9]+[\[](.+)[\]]").Select(match => match.Value).ToList();
+      if (internalMatches.Count == 0) return input;
+      return findMacro(innerMatch);
+    }
+    return null;
+  }
   public void PreProcessing()
   {
     for (int i = 0; i < source.Count; i++)

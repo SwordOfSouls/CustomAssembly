@@ -7,17 +7,17 @@ namespace CustomAssembly;
 
 public class Emulator : Emulation
 {
-    private long[] registers = new long[32];
-    private ushort[] ram = new ushort[65534];
-    private Memory<ushort> stack;
-    private Memory<ushort> heap;
+    private readonly long[] registers = new long[32];
+    private readonly ushort[] ram = new ushort[65534];
+    private readonly Memory<ushort> stack;
+    private readonly Memory<ushort> heap;
 
-    private InternalProcessor _processor;
-    private byte[] rom;
+    private readonly InternalProcessor processor;
+    private readonly byte[] rom;
 
 
-    private ushort instructionCounter = 31;
-    private Memory<ushort> screen;
+    private const ushort InstructionCounter = 31;
+    private readonly Memory<ushort> screen;
 
     public Emulator(String source)
     {
@@ -25,25 +25,32 @@ public class Emulator : Emulation
         screen = ram.AsMemory().Slice(4096, 1025);
         heap = ram.AsMemory().Slice(4096+1024, 65534-(4096+1025));
         rom = File.ReadAllBytes("../../../../" + source);
-        _processor = new InternalProcessor(this);
+        processor = new InternalProcessor(this);
         Console.Write("\n");
-        Console.SetBufferSize(0x100, 0xFFF);
+        try
+        {
+            Console.SetBufferSize(0x100, 0xFFF);
+        }
+        catch (Exception ignored)
+        {
+        }
         var stdout = Console.OpenStandardOutput();
         var con = new StreamWriter(stdout, Encoding.ASCII);
         con.AutoFlush = true;
         Console.SetOut(con);
+        Console.CursorVisible = false;
     }
 
     public void Run()
     {
-        for (ushort i = 0; registers[instructionCounter] < rom.Length; registers[instructionCounter] += 4)
+        for (byte i = 0; registers[InstructionCounter] < rom.Length; registers[InstructionCounter] += 4)
         {
-            byte id = rom[registers[instructionCounter]];
+            byte id = rom[registers[InstructionCounter]];
 
-            byte arg1 = rom[registers[instructionCounter] + 1];
-            byte arg2 = rom[registers[instructionCounter] + 2];
-            byte arg3 = rom[registers[instructionCounter] + 3];
-            RootCode rootCode = _processor.valueKey[id];
+            byte arg1 = rom[registers[InstructionCounter] + 1];
+            byte arg2 = rom[registers[InstructionCounter] + 2];
+            byte arg3 = rom[registers[InstructionCounter] + 3];
+            RootCode rootCode = processor.valueKey[id];
             rootCode.Process(arg1, arg2, arg3);
         }
     }
@@ -51,8 +58,7 @@ public class Emulator : Emulation
     public void printScreen()
     {
         Span<ushort> span = screen.Span;
-   
-        Console.CursorVisible = false;
+        
         Console.SetCursorPosition(0, 1);
         StringBuilder screenPrint = new StringBuilder();
         for (int i = 0; i < span.Length-1; i++)
@@ -62,6 +68,7 @@ public class Emulator : Emulation
         }
         screenPrint.Append("\n".PastelBg(ConsoleColor.Black));
         Console.Write(screenPrint);
+        screenPrint = null;
     }
 
     public void setScreen(int addr, ushort value)
@@ -101,6 +108,6 @@ public class Emulator : Emulation
 
     public void Jump(ushort addr)
     {
-        registers[instructionCounter] = addr;
+        registers[InstructionCounter] = addr;
     }
 }

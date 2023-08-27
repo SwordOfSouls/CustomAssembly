@@ -5,7 +5,6 @@ string target = "compiled.bin";
 
 Console.WriteLine($"Assembling '{source}' to target '{target}'");
 var assembler = new Assembler(source, target);
-assembler.Multiplier();
 assembler.MacroProcessing();
 assembler.PreProcessing();
 assembler.Process();

@@ -10,6 +10,6 @@ JMP start
 
 end:
 
-
-
-//printScreen[A]
+//example using inline returns
+//setValue[00 01,00 03]
+//printScreenR[getValue[00 01]]
